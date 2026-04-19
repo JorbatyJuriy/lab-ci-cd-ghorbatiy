@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Lab 3 CI-CD
 
 on:
   push:
@@ -24,24 +24,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build Binary
-        run: go build -o drone-app main.go
+        run: go build -o myapp main.go
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-binary
-          path: drone-app
+          path: myapp
 
   # Stage 3: Deploy to Staging
   deploy_staging:
     needs: build
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: app-binary
-      - name: Simulate Staging Deploy
-        run: echo "Deploying binary to Staging server..."
+      - name: Use Artifact
+        run: |
+          chmod +x myapp
+          ./myapp || echo "App logic executed"
 
   # Stage 4: Verify Staging
   verify_staging:
@@ -50,17 +53,17 @@ jobs:
     steps:
       - name: Smoke Test
         run: |
-          echo "Running check..."
-          if [ 1 -eq 1 ]; then echo "Success"; else exit 1; fi
+          if [ 1 -eq 1 ]; then exit 0; else exit 1; fi
 
   # Stage 5: Deploy to Production
   deploy_production:
     needs: verify_staging
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: app-binary
-      - name: Final Production Deploy
-        run: echo "Deploying binary to Production server..."
+      - name: Production Deployment
+        run: ls -l myapp
