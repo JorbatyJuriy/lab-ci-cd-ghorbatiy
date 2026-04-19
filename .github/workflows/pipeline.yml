@@ -25,7 +25,7 @@ jobs:
           version: latest
 
       - name: Run Security Scan (gosec)
-        uses: securego/gosec-action@v3
+        uses: securego/gosec@master
         with:
           args: ./...
 
