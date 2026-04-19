@@ -5,17 +5,35 @@ on:
     branches: [ main ]
 
 jobs:
-  # Stage 1: Test
+  # Stage 1: Validation (Test, Lint, Security)
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-      - name: Run Unit Tests
-        run: go test ./...
+          cache: true # Вмикаємо кешування для швидкості
+
+      # Unit Tests + Coverage
+      - name: Run Tests with Coverage
+        run: |
+          go test -v -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+
+      # Lintering
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
+      # Security Scan
+      - name: Run Security Scan (gosec)
+        uses: securego/gosec-action@v2.1.8
+        with:
+          args: ./...
 
   # Stage 2: Build
   build:
