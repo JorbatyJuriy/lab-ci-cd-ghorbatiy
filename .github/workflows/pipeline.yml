@@ -1,37 +1,31 @@
-name: Lab 3 CI-CD
+name: Lab 3 CI-CD Pipeline
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  # Stage 1: Validation (Test, Lint, Security)
+  # Stage 1: Validation (Тести, Лінтер, Безпека)
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-          cache: true # Вмикаємо кешування для швидкості
+          cache: true
 
-      # Unit Tests + Coverage
-      - name: Run Tests with Coverage
-        run: |
-          go test -v -coverprofile=coverage.out ./...
-          go tool cover -func=coverage.out
+      - name: Run Unit Tests
+        run: go test -v -coverprofile=coverage.out ./...
 
-      # Lintering
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
+      - name: Run Linter
+        uses: golangci/golangci-lint-action@v6
         with:
           version: latest
 
-      # Security Scan
       - name: Run Security Scan (gosec)
-        uses: securego/gosec-action@v2.1.8
+        uses: securego/gosec-action@v3
         with:
           args: ./...
 
@@ -59,29 +53,34 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-binary
-      - name: Use Artifact
+      - name: Simulate Staging Deploy
         run: |
           chmod +x myapp
-          ./myapp || echo "App logic executed"
+          echo "Executing application on Staging..."
+          ./myapp || echo "App placeholder executed"
 
-  # Stage 4: Verify Staging
+  # Stage 4: Verify Staging (Smoke Test)
   verify_staging:
     needs: deploy_staging
     runs-on: ubuntu-latest
     steps:
       - name: Smoke Test
         run: |
+          echo "Verifying deployment (1=1 check)..."
           if [ 1 -eq 1 ]; then exit 0; else exit 1; fi
 
-  # Stage 5: Deploy to Production
+  # Stage 5: Deploy to Production (З Manual Approval)
   deploy_production:
     needs: verify_staging
     runs-on: ubuntu-latest
+    # Цей рядок прив'язує етап до ручного підтвердження в GitHub
     environment: production
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: app-binary
-      - name: Production Deployment
-        run: ls -l myapp
+      - name: Final Production Deployment
+        run: |
+          echo "Final release to Production environment"
+          ls -l myapp
